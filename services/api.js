@@ -74,29 +74,26 @@ export const searchTitles = async (query) => {
   }
 };
 
-/**
- * ИСПРАВЛЕННЫЙ ТОП (ЧАРТЫ)
- * Теперь используем /titles с сортировкой SORT_BY_POPULARITY, как вы просили.
- * Это гарантирует, что данные придут в том же формате, что и на главной.
- */
-export const getTopRated = async () => {
-  console.log("[API] Loading Top Charts (via /titles)...");
+export const getTopRated = async (activeType = "MOVIE", token = null) => {
   try {
     const response = await apiClient.get("/titles", {
       params: {
-        limit: 20, // Топ-20
-        sortBy: "SORT_BY_POPULARITY", // Ваше требование
-        sortOrder: "ASC",
+        limit: 20,
+        pageToken: token, // Передаем токен вместо номера страницы
+        sortBy: "SORT_BY_USER_RATING_COUNT",
+        sortOrder: "DESC",
         info: "base_info",
-        titleType: "movie", // Можно ограничить только фильмами
+        types: activeType, // В доке указано types (array)
       },
     });
 
-    // Так как используем /titles, структура будет стандартной: { titles: [...] }
-    return response.data.titles || [];
+    return {
+      titles: response.data.titles || [],
+      nextToken: response.data.nextPageToken || null, // Запоминаем токен для следующего шага
+    };
   } catch (error) {
     console.error("[API Top Error]", error.message);
-    return [];
+    return { titles: [], nextToken: null };
   }
 };
 
