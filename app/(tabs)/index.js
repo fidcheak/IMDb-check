@@ -1,28 +1,73 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  View
+} from "react-native";
 import MovieCard from "../../components/MovieCard";
 import { getTitles } from "../../services/api";
 
 export default function HomeScreen() {
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [nextPageToken, setNextPageToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchMovies = async () => {
-    if (loading) return;
-    setLoading(true);
-    const result = await getTitles(page);
+  // Флаг для предотвращения одновременных запросов
+  const isFetching = useRef(false);
 
-    // Safety check for array response
-    const newTitles = result.titles || [];
+  const loadMovies = async (token = null, isRefresh = false) => {
+    if (isFetching.current) return;
 
-    setData((prev) => (page === 1 ? newTitles : [...prev, ...newTitles]));
-    setLoading(false);
+    isFetching.current = true;
+    if (isRefresh) setIsRefreshing(true);
+    else setIsLoading(true);
+
+    const result = await getTitles(token);
+
+    if (result.titles && result.titles.length > 0) {
+      setData((prevData) => {
+        // Если это обновление (Pull-to-refresh), заменяем данные полностью
+        if (isRefresh) return result.titles;
+
+        // Если подгрузка — фильтруем по ID, чтобы не было дублей
+        const existingIds = new Set(prevData.map((item) => item.id));
+        const uniqueNew = result.titles.filter(
+          (item) => !existingIds.has(item.id),
+        );
+
+        return [...prevData, ...uniqueNew];
+      });
+
+      // Сохраняем НОВЫЙ токен
+      setNextPageToken(result.nextPageToken);
+      console.log("--- Токен обновлен на:", result.nextPageToken);
+    } else {
+      // Если API ничего не вернуло, зануляем токен, чтобы не пытаться снова
+      setNextPageToken(null);
+    }
+
+    setIsLoading(false);
+    setIsRefreshing(false);
+    isFetching.current = false;
   };
 
   useEffect(() => {
-    fetchMovies();
-  }, [page]);
+    loadMovies(null); // Загрузка самой первой страницы
+  }, []);
+
+  const handleLoadMore = () => {
+    // ВАЖНО: запрашиваем только если есть токен и он НЕ совпадает с предыдущим
+    if (nextPageToken && !isLoading && !isFetching.current) {
+      loadMovies(nextPageToken);
+    }
+  };
+
+  const handleRefresh = () => {
+    setNextPageToken(null);
+    loadMovies(null, true);
+  };
 
   return (
     <View style={styles.container}>
@@ -30,11 +75,18 @@ export default function HomeScreen() {
         data={data}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <MovieCard item={item} />}
-        contentContainerStyle={styles.listContent}
-        onEndReached={() => setPage((prev) => prev + 1)}
-        onEndReachedThreshold={0.5}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.2} // Срабатывает ближе к концу списка
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
         ListFooterComponent={
-          loading ? <ActivityIndicator size="large" color="#F5C518" /> : null
+          isLoading && nextPageToken ? (
+            <ActivityIndicator
+              size="large"
+              color="#F5C518"
+              style={{ margin: 20 }}
+            />
+          ) : null
         }
       />
     </View>
@@ -42,11 +94,5 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  listContent: {
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
 });

@@ -4,43 +4,104 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.imdbapi.dev";
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
+  timeout: 15000,
   headers: {
+    Accept: "application/json",
     "Content-Type": "application/json",
   },
 });
 
-export const getTitles = async (page = 1, limit = 10) => {
+/**
+ * Главная лента (как и было, работает)
+ */
+export const getTitles = async (pageToken = null) => {
   try {
-    // Note: The API documentation defines how pagination tokens work.
-    // Assuming simple limit/page params or token based on API spec.
-    // For this example, we request titles lists.
-    const response = await apiClient.get("/titles", {
-      params: { limit, page, info: "base_info" }, // info param to get your specific JSON structure
-    });
-    return response.data;
+    const params = {
+      limit: 10,
+      info: "base_info",
+      sortBy: "SORT_BY_POPULARITY", // Сортировка по умолчанию
+      sortOrder: "ASC",
+      titleType: "movie,tvSeries",
+    };
+    if (pageToken) params.pageToken = pageToken;
+
+    const response = await apiClient.get("/titles", { params });
+
+    // Пытаемся достать токен из разных возможных полей
+    const nextToken = response.data.nextPage || response.data.pageToken || null;
+
+    return {
+      titles: response.data.titles || [],
+      nextPageToken: nextToken,
+    };
   } catch (error) {
-    console.error("Error fetching titles", error);
-    return { titles: [] };
+    console.error("[API GetTitles Error]", error.message);
+    return { titles: [], nextPageToken: null };
   }
 };
 
+/**
+ * ИСПРАВЛЕННЫЙ ПОИСК
+ * Мы используем endpoint /search/titles.
+ * Если он не работает, смотрите логи в консоли.
+ */
 export const searchTitles = async (query) => {
   if (!query) return [];
+  console.log(`[API] Start Search: "${query}"`);
+
   try {
+    // В некоторых версиях API параметр называется 'exact' или просто 'query'
+    // Убираем 'info', так как поиск может возвращать упрощенную структуру
     const response = await apiClient.get("/search/titles", {
-      params: { query },
+      params: {
+        query: query,
+        limit: 20,
+      },
     });
-    // Normalizing search response to match title structure if needed
-    return response.data.results || [];
+
+    console.log("[API] Search Response Status:", response.status);
+
+    // Логируем ключи ответа, чтобы понять структуру
+    if (response.data) {
+      console.log("[API] Search Data Keys:", Object.keys(response.data));
+    }
+
+    // Обычно поиск возвращает массив в поле 'results' или 'titles'
+    return response.data.results || response.data.titles || [];
   } catch (error) {
-    console.error("Error searching", error);
+    console.error("[API Search Error]", error.response?.data || error.message);
+    return [];
+  }
+};
+
+/**
+ * ИСПРАВЛЕННЫЙ ТОП (ЧАРТЫ)
+ * Теперь используем /titles с сортировкой SORT_BY_POPULARITY, как вы просили.
+ * Это гарантирует, что данные придут в том же формате, что и на главной.
+ */
+export const getTopRated = async () => {
+  console.log("[API] Loading Top Charts (via /titles)...");
+  try {
+    const response = await apiClient.get("/titles", {
+      params: {
+        limit: 20, // Топ-20
+        sortBy: "SORT_BY_POPULARITY", // Ваше требование
+        sortOrder: "ASC",
+        info: "base_info",
+        titleType: "movie", // Можно ограничить только фильмами
+      },
+    });
+
+    // Так как используем /titles, структура будет стандартной: { titles: [...] }
+    return response.data.titles || [];
+  } catch (error) {
+    console.error("[API Top Error]", error.message);
     return [];
   }
 };
 
 export const getTitleDetails = async (id) => {
   try {
-    // Fetch basic details and other endpoints concurrently for performance
     const [details, releaseDates] = await Promise.all([
       apiClient.get(`/titles/${id}`),
       apiClient.get(`/titles/${id}/releaseDates`),
@@ -49,31 +110,5 @@ export const getTitleDetails = async (id) => {
   } catch (error) {
     console.error("Error fetching details", error);
     return null;
-  }
-};
-
-export const getChartData = async () => {
-  try {
-    // Пример запроса к StarMeter или Top Rated
-    const response = await apiClient.get("/chart/starmeter");
-
-    // Часто API возвращает: { entries: [ { item: { ...movieData }, ... } ] }
-    // Нам нужно "вытащить" данные фильма на верхний уровень, чтобы MovieCard их понял.
-    const rawData = response.data.entries || response.data.titles || [];
-
-    return rawData.map((entry) => {
-      // Если данные фильма вложены в поле 'item' (стандарт для чартов), достаем их.
-      // Если нет, возвращаем как есть.
-      if (entry.item) {
-        return {
-          ...entry.item,
-          rank: entry.currentRank, // Сохраняем ранг, если он есть
-        };
-      }
-      return entry;
-    });
-  } catch (error) {
-    console.error("Error fetching chart", error);
-    return [];
   }
 };
