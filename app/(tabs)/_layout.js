@@ -1,27 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { Colors } from "../../constants/theme";
+import LogoHeader from "../../components/LogoHeader";
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: "#1E1E1E",
-          borderTopColor: "#333",
+          backgroundColor: "#1C1C1C", // A slightly lighter black for contrast
+          borderTopColor: "#333333",
           height: 60,
           paddingBottom: 8,
         },
-        tabBarActiveTintColor: "#F5C518",
-        tabBarInactiveTintColor: "#888",
+        tabBarActiveTintColor: Colors.dark.tint, // Our new gold color
+        tabBarInactiveTintColor: Colors.dark.icon, // Our new icon grey
         headerShown: true,
-        headerStyle: { backgroundColor: "#121212" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: Colors.dark.background },
+        headerTintColor: Colors.dark.text,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Browse",
+          headerTitle: () => <LogoHeader />,
           tabBarIcon: ({ color }) => (
             <Ionicons name="home" size={24} color={color} />
           ),
