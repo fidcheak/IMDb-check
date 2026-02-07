@@ -17,7 +17,7 @@ A clean, read-only mobile application for browsing IMDb movie and TV information
 
 * React Native with Expo
 * Expo Router for navigation
-* TypeScript
+* JavaScript
 * Axios for API requests
 * IMDb API
 * Functional components with React hooks
