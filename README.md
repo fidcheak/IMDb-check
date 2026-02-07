@@ -28,7 +28,7 @@ Clone the repository:
 
 ```
 git clone https://github.com/fidcheak/IMDb-check
-cd imdb-browser
+cd IMDb-check
 ```
 
 Install dependencies:
