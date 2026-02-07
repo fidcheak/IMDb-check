@@ -27,7 +27,7 @@ A clean, read-only mobile application for browsing IMDb movie and TV information
 Clone the repository:
 
 ```
-git clone https://github.com/your-username/imdb-browser.git
+git clone https://github.com/fidcheak/IMDb-check
 cd imdb-browser
 ```
 
