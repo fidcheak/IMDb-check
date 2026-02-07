@@ -26,7 +26,7 @@ export default function SearchScreen() {
     Keyboard.dismiss();
     setLoading(true);
     setHasSearched(true);
-    setResults([]); // Очищаем старые результаты перед новым поиском
+    setResults([]); // Очищаем старые результаты
 
     try {
       const data = await searchTitles(query);
