@@ -7,7 +7,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false, // Без подписей
+        tabBarShowLabel: true, // Без подписей
         tabBarActiveTintColor: "#F5C518",
         tabBarInactiveTintColor: "#888",
         tabBarStyle: styles.floatingTabBar,
@@ -17,10 +17,11 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: "Главная",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "home" : "home-outline"}
-              size={26}
+              size={30}
               color={color}
             />
           ),
@@ -29,10 +30,11 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
+          title: "Поиск",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "search" : "search-outline"}
-              size={26}
+              size={30}
               color={color}
             />
           ),
@@ -41,10 +43,11 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="top"
         options={{
+          title: "Поиск",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "star" : "star-outline"}
-              size={26}
+              size={30}
               color={color}
             />
           ),
@@ -61,14 +64,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 30, // Симметричный отступ от краев экрана
     backgroundColor: "rgba(28, 28, 30, 0.98)",
     borderRadius: 30,
-    height: 64,
+    height: 52,
     borderTopWidth: 0,
     elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    // Убираем системные отступы iOS/Android для точного центрирования
     paddingBottom: 0,
     left: 0,
     right: 0,
