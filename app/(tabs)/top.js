@@ -14,115 +14,64 @@ import { getTopRated } from "../../services/api";
 export default function TopChartScreen() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState("MOVIE");
-  const [nextCursor, setNextCursor] = useState(null);
 
   useEffect(() => {
-    loadInitialData();
+    const load = async () => {
+      setLoading(true);
+      const { titles } = await getTopRated(activeTab);
+      setData(titles);
+      setLoading(false);
+    };
+    load();
   }, [activeTab]);
-
-  const loadInitialData = async () => {
-    setLoading(true);
-    setNextCursor(null); // Сбрасываем токен при смене вкладки
-
-    const { titles, nextToken } = await getTopRated(activeTab, null);
-
-    setData(titles);
-    setNextCursor(nextToken);
-    setLoading(false);
-  };
-
-  const loadMoreData = async () => {
-    // Если токена нет, значит данных больше не будет
-    if (loadingMore || !nextCursor) return;
-
-    setLoadingMore(true);
-    const { titles, nextToken } = await getTopRated(activeTab, nextCursor);
-
-    if (titles.length > 0) {
-      setData((prevData) => {
-        // На всякий случай фильтруем дубли по ID (стандарт качества из Home)
-        const existingIds = new Set(prevData.map((item) => item.id));
-        const uniqueNew = titles.filter((item) => !existingIds.has(item.id));
-        return [...prevData, ...uniqueNew];
-      });
-      setNextCursor(nextToken);
-    } else {
-      setNextCursor(null); // Если пришло пусто, значит финиш
-    }
-    setLoadingMore(false);
-  };
-
-  const renderFooter = () => {
-    if (!loadingMore) return <View style={{ height: 50 }} />;
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#F5C518" />
-      </View>
-    );
-  };
 
   return (
     <ScreenLayout>
-      <View style={styles.header}>
-        <Text style={styles.title}>Рейтинги</Text>
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "MOVIE" && styles.activeTab]}
-            onPress={() => activeTab !== "MOVIE" && setActiveTab("MOVIE")}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "MOVIE" && styles.activeTabText,
-              ]}
-            >
-              Фильмы
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "TV_SERIES" && styles.activeTab]}
-            onPress={() =>
-              activeTab !== "TV_SERIES" && setActiveTab("TV_SERIES")
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "MOVIE" && styles.activeTab]}
+          onPress={() => setActiveTab("MOVIE")}
+        >
+          <Text
+            style={
+              activeTab === "MOVIE" ? styles.activeTabText : styles.tabText
             }
           >
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "TV_SERIES" && styles.activeTabText,
-              ]}
-            >
-              Сериалы
-            </Text>
-          </TouchableOpacity>
-        </View>
+            Фильмы
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "TV" && styles.activeTab]}
+          onPress={() => setActiveTab("TV")}
+        >
+          <Text
+            style={activeTab === "TV" ? styles.activeTabText : styles.tabText}
+          >
+            Сериалы
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#F5C518" />
-        </View>
+        <ActivityIndicator
+          size="large"
+          color="#F5C518"
+          style={{ marginTop: 50 }}
+        />
       ) : (
         <FlatList
-          key={activeTab}
           data={data}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          contentContainerStyle={styles.list}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item, index }) => (
             <View style={styles.row}>
-              <View style={styles.rankBox}>
-                <Text style={styles.rankText}>{index + 1}</Text>
-              </View>
+              <Text style={styles.rank}>{index + 1}</Text>
               <View style={{ flex: 1 }}>
                 <MovieCard item={item} />
               </View>
             </View>
           )}
-          onEndReached={loadMoreData}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
+          contentContainerStyle={{ padding: 16 }}
         />
       )}
     </ScreenLayout>
@@ -130,27 +79,23 @@ export default function TopChartScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { padding: 16, backgroundColor: "#121212" },
-  title: { fontSize: 28, fontWeight: "bold", color: "#fff", marginBottom: 15 },
   tabContainer: {
     flexDirection: "row",
+    margin: 16,
     backgroundColor: "#1E1E1E",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 4,
   },
-  tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 8 },
+  tab: { flex: 1, padding: 10, alignItems: "center", borderRadius: 6 },
   activeTab: { backgroundColor: "#F5C518" },
-  tabText: { color: "#888", fontWeight: "600" },
+  tabText: { color: "#888" },
   activeTabText: { color: "#000", fontWeight: "bold" },
-  list: { padding: 16 },
-  row: { flexDirection: "row", marginBottom: 20 },
-  rankBox: { width: 45, justifyContent: "center", alignItems: "center" },
-  rankText: { color: "#F5C518", fontSize: 22, fontWeight: "bold" },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 100,
+  row: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  rank: {
+    color: "#F5C518",
+    fontSize: 20,
+    fontWeight: "bold",
+    width: 40,
+    textAlign: "center",
   },
-  footerLoader: { paddingVertical: 20 },
 });

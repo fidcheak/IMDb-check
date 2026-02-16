@@ -1,6 +1,14 @@
 import axios from "axios";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.imdbapi.dev";
+const ACCESS_TOKEN =
+  "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyODZlYTVlMjJkYmMwNzVhM2VjOTRmYmFlZmJmMzE2MSIsIm5iZiI6MTc3MDIxMzE4My4zOTM5OTk4LCJzdWIiOiI2OTgzNGYzZmQzNzgwNDdjM2FlNzRhNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.GVl6p_zSuZbrCedfjQExwVbW513cOhgaUqzcwhUrS_U";
+const BASE_URL = "https://api.themoviedb.org/3";
+
+// Хелпер для формирования полных ссылок на изображения
+export const getImageUrl = (path, size = "w500") =>
+  path
+    ? `https://image.tmdb.org/t/p/${size}${path}`
+    : "https://via.placeholder.com/500x750?text=No+Image";
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -8,31 +16,21 @@ const apiClient = axios.create({
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
+    Authorization: `Bearer ${ACCESS_TOKEN}`,
   },
 });
 
-/**
- * Главная лента (как и было, работает)
- */
-export const getTitles = async (pageToken = null) => {
+export const getTitles = async (page = 1) => {
   try {
-    const params = {
-      limit: 10,
-      info: "base_info",
-      sortBy: "SORT_BY_POPULARITY", // Сортировка по умолчанию
-      sortOrder: "ASC",
-      titleType: "movie,tvSeries",
-    };
-    if (pageToken) params.pageToken = pageToken;
-
-    const response = await apiClient.get("/titles", { params });
-
-    // Пытаемся достать токен из разных возможных полей
-    const nextToken = response.data.nextPage || response.data.pageToken || null;
-
+    const response = await apiClient.get("/trending/all/day", {
+      params: { page, language: "ru-RU" },
+    });
     return {
-      titles: response.data.titles || [],
-      nextPageToken: nextToken,
+      titles: response.data.results || [],
+      nextPageToken:
+        response.data.page < response.data.total_pages
+          ? response.data.page + 1
+          : null,
     };
   } catch (error) {
     console.error("[API GetTitles Error]", error.message);
@@ -40,56 +38,32 @@ export const getTitles = async (pageToken = null) => {
   }
 };
 
-/**
- * ИСПРАВЛЕННЫЙ ПОИСК
- * Мы используем endpoint /search/titles.
- * Если он не работает, смотрите логи в консоли.
- */
-export const searchTitles = async (query) => {
+export const searchTitles = async (query, page = 1) => {
   if (!query) return [];
-  console.log(`[API] Start Search: "${query}"`);
-
   try {
-    // В некоторых версиях API параметр называется 'exact' или просто 'query'
-    // Убираем 'info', так как поиск может возвращать упрощенную структуру
-    const response = await apiClient.get("/search/titles", {
-      params: {
-        query: query,
-        limit: 20,
-      },
+    const response = await apiClient.get("/search/multi", {
+      params: { query, page, language: "ru-RU", include_adult: false },
     });
-
-    console.log("[API] Search Response Status:", response.status);
-
-    // Логируем ключи ответа, чтобы понять структуру
-    if (response.data) {
-      console.log("[API] Search Data Keys:", Object.keys(response.data));
-    }
-
-    // Обычно поиск возвращает массив в поле 'results' или 'titles'
-    return response.data.results || response.data.titles || [];
+    return response.data.results.filter((i) => i.media_type !== "person") || [];
   } catch (error) {
-    console.error("[API Search Error]", error.response?.data || error.message);
+    console.error("[API Search Error]", error.message);
     return [];
   }
 };
 
-export const getTopRated = async (activeType = "MOVIE", token = null) => {
+export const getTopRated = async (activeType = "MOVIE", page = 1) => {
   try {
-    const response = await apiClient.get("/titles", {
-      params: {
-        limit: 20,
-        pageToken: token, // Передаем токен вместо номера страницы
-        sortBy: "SORT_BY_USER_RATING_COUNT",
-        sortOrder: "DESC",
-        info: "base_info",
-        types: activeType, // В доке указано types (array)
-      },
+    const endpoint =
+      activeType === "MOVIE" ? "/movie/top_rated" : "/tv/top_rated";
+    const response = await apiClient.get(endpoint, {
+      params: { page, language: "ru-RU" },
     });
-
     return {
-      titles: response.data.titles || [],
-      nextToken: response.data.nextPageToken || null, // Запоминаем токен для следующего шага
+      titles: response.data.results || [],
+      nextToken:
+        response.data.page < response.data.total_pages
+          ? response.data.page + 1
+          : null,
     };
   } catch (error) {
     console.error("[API Top Error]", error.message);
@@ -97,13 +71,16 @@ export const getTopRated = async (activeType = "MOVIE", token = null) => {
   }
 };
 
-export const getTitleDetails = async (id) => {
+export const getTitleDetails = async (id, type = "movie") => {
   try {
-    const [details, releaseDates] = await Promise.all([
-      apiClient.get(`/titles/${id}`),
-      apiClient.get(`/titles/${id}/releaseDates`),
-    ]);
-    return { ...details.data, releaseDates: releaseDates.data };
+    // Используем append_to_response для получения видео и актеров за один запрос
+    const response = await apiClient.get(`/${type}/${id}`, {
+      params: {
+        append_to_response: "videos,credits,release_dates",
+        language: "ru-RU",
+      },
+    });
+    return response.data;
   } catch (error) {
     console.error("Error fetching details", error);
     return null;

@@ -1,84 +1,64 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  RefreshControl,
-  StyleSheet,
-  View,
-} from "react-native";
-import MovieCarousel from "../../components/MovieCarousel";
-import { getTitles, getTopRated } from "../../services/api";
-import { Colors } from "../../constants/theme";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import MovieCard from "../../components/MovieCard";
+import { getTitles } from "../../services/api";
 
 export default function HomeScreen() {
-  const [popular, setPopular] = useState([]);
-  const [topRated, setTopRated] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState([]);
+  const [nextPage, setNextPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isFetching = useRef(false);
 
-  const loadMovies = async () => {
-    // Fetch in parallel
-    const [popularResult, topRatedResult] = await Promise.all([
-      getTitles(),
-      getTopRated(),
-    ]);
+  const loadMovies = async (page = 1, isRefresh = false) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
 
-    if (popularResult.titles) {
-      setPopular(popularResult.titles);
-    }
-    if (topRatedResult.titles) {
-      setTopRated(topRatedResult.titles);
+    if (isRefresh) setIsRefreshing(true);
+    else setIsLoading(true);
+
+    const result = await getTitles(page);
+
+    if (result.titles?.length > 0) {
+      setData((prev) =>
+        isRefresh ? result.titles : [...prev, ...result.titles],
+      );
+      setNextPage(result.nextPageToken);
     }
 
     setIsLoading(false);
+    setIsRefreshing(false);
+    isFetching.current = false;
   };
 
   useEffect(() => {
-    loadMovies();
+    loadMovies(1);
   }, []);
-
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await loadMovies();
-    setIsRefreshing(false);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={Colors.dark.tint} />
-      </View>
-    );
-  }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={onRefresh}
-          tintColor={Colors.dark.tint}
-        />
-      }
-    >
-      <MovieCarousel title="Popular" data={popular} />
-      <MovieCarousel title="Top Rated" data={topRated} />
-    </ScrollView>
+    <View style={styles.container}>
+      <FlatList
+        data={data}
+        keyExtractor={(item) => `${item.id}-${item.media_type}`}
+        renderItem={({ item }) => <MovieCard item={item} />}
+        onEndReached={() => nextPage && loadMovies(nextPage)}
+        onEndReachedThreshold={0.3}
+        refreshing={isRefreshing}
+        onRefresh={() => loadMovies(1, true)}
+        ListFooterComponent={
+          isLoading && (
+            <ActivityIndicator
+              size="large"
+              color="#F5C518"
+              style={{ margin: 20 }}
+            />
+          )
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.dark.background,
-    paddingTop: 20, // Add some space at the top
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.dark.background,
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
 });
-

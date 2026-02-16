@@ -2,82 +2,84 @@ import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { getTitleDetails } from "../../services/api";
+import { getImageUrl, getTitleDetails } from "../../services/api";
 
 export default function TitleDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, type = "movie" } = useLocalSearchParams(); // type передаем из MovieCard
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDetails = async () => {
-      const data = await getTitleDetails(id);
+      const data = await getTitleDetails(id, type);
       setDetails(data);
       setLoading(false);
     };
     loadDetails();
   }, [id]);
 
-  if (loading) {
+  if (loading)
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#F5C518" />
       </View>
     );
-  }
-
-  if (!details) {
+  if (!details)
     return (
       <View style={styles.center}>
-        <Text style={styles.text}>Error loading details</Text>
+        <Text style={styles.text}>Ошибка загрузки</Text>
       </View>
     );
-  }
 
   return (
     <ScrollView style={styles.container}>
       <Image
-        source={{ uri: details.primaryImage?.url }}
+        source={{
+          uri: getImageUrl(
+            details.backdrop_path || details.poster_path,
+            "original",
+          ),
+        }}
         style={styles.heroImage}
-        contentFit="cover"
       />
-
       <View style={styles.content}>
-        <Text style={styles.title}>{details.primaryTitle}</Text>
+        <Text style={styles.title}>{details.title || details.name}</Text>
 
         <View style={styles.metaRow}>
-          <Text style={styles.meta}>{details.startYear}</Text>
+          <Text style={styles.meta}>
+            {
+              (details.release_date || details.first_air_date || "").split(
+                "-",
+              )[0]
+            }
+          </Text>
           <Text style={styles.meta}>
             {" "}
-            •{" "}
-            {details.runtimeSeconds
-              ? Math.floor(details.runtimeSeconds / 60) + " min"
-              : "N/A"}
+            • {details.runtime || details.episode_run_time?.[0] || "N/A"} мин
           </Text>
           <Text style={styles.rating}>
-            ★ {details.rating?.aggregateRating}/10
+            ★ {details.vote_average?.toFixed(1)}/10
           </Text>
         </View>
 
         <View style={styles.genres}>
           {details.genres?.map((g) => (
-            <View key={g} style={styles.pill}>
-              <Text style={styles.pillText}>{g}</Text>
+            <View key={g.id} style={styles.pill}>
+              <Text style={styles.pillText}>{g.name}</Text>
             </View>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Plot</Text>
-        <Text style={styles.body}>{details.plot}</Text>
-
-        <Text style={styles.sectionTitle}>Type</Text>
-        <Text style={styles.body}>{details.type}</Text>
+        <Text style={styles.sectionTitle}>Описание</Text>
+        <Text style={styles.body}>
+          {details.overview || "Описание отсутствует."}
+        </Text>
       </View>
     </ScrollView>
   );
@@ -91,9 +93,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#121212",
   },
-  heroImage: { width: "100%", height: 400 },
+  heroImage: { width: "100%", height: 300, backgroundColor: "#222" },
   content: { padding: 20 },
-  title: { fontSize: 28, fontWeight: "bold", color: "#fff", marginBottom: 10 },
+  title: { fontSize: 26, fontWeight: "bold", color: "#fff", marginBottom: 10 },
   metaRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   meta: { color: "#aaa", fontSize: 16, marginRight: 10 },
   rating: {
@@ -105,13 +107,13 @@ const styles = StyleSheet.create({
   genres: { flexDirection: "row", flexWrap: "wrap", marginBottom: 20 },
   pill: {
     backgroundColor: "#333",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-    marginRight: 10,
-    marginBottom: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
   },
-  pillText: { color: "#ddd" },
+  pillText: { color: "#ddd", fontSize: 12 },
   sectionTitle: {
     color: "#F5C518",
     fontSize: 18,

@@ -1,155 +1,122 @@
-import { Image } from "expo-image"; // Better caching than standard Image
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { getImageUrl } from "../services/api";
 
-// Helper to format duration from seconds
-const formatRuntime = (seconds) => {
-  if (!seconds) return "";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return `${h}h ${m}m`;
-};
-
-const MovieCard = ({ item }) => {
+export default function MovieCard({ item }) {
   const router = useRouter();
 
-  // Destructure based on your specific JSON
-  const { id, primaryTitle, startYear, primaryImage, rating, genres } = item;
+  // 1. Логика определения названия (фильм vs сериал)
+  const title = item.title || item.name;
 
-  const imageUrl =
-    primaryImage?.url || "https://via.placeholder.com/200x300?text=No+Image";
-  const score = rating?.aggregateRating || "N/A";
+  // 2. Логика определения года
+  const rawDate = item.release_date || item.first_air_date;
+  const year = rawDate ? rawDate.split("-")[0] : "N/A";
+
+  // 3. Форматирование рейтинга (округляем до 1 знака)
+  const rating = item.vote_average ? item.vote_average.toFixed(1) : "0.0";
+
+  // 4. Определение типа медиа для навигации
+  // Если API не вернул media_type (например, в поиске), гадаем по наличию title
+  const mediaType = item.media_type || (item.title ? "movie" : "tv");
 
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push(`/title/${id}`)}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
+      onPress={() =>
+        router.push({
+          pathname: "/title/[id]",
+          params: { id: item.id, type: mediaType },
+        })
+      }
     >
       <Image
-        source={{ uri: imageUrl }}
+        source={{ uri: getImageUrl(item.poster_path, "w342") }}
         style={styles.poster}
         contentFit="cover"
         transition={500}
       />
 
       <View style={styles.info}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title} numberOfLines={2}>
-            {primaryTitle}
-          </Text>
-          <View style={styles.ratingBadge}>
-            <Text style={styles.ratingText}>★ {score}</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {title}
+        </Text>
+
+        <View style={styles.metaRow}>
+          <Text style={styles.year}>{year}</Text>
+          <View style={styles.ratingContainer}>
+            <Ionicons name="star" size={14} color="#F5C518" />
+            <Text style={styles.rating}>{rating}</Text>
           </View>
         </View>
 
-        <View style={styles.metaRow}>
-          <Text style={styles.metaText}>{startYear}</Text>
-          {item.runtimeSeconds && (
-            <>
-              <Text style={styles.dot}>•</Text>
-              <Text style={styles.metaText}>
-                {formatRuntime(item.runtimeSeconds)}
-              </Text>
-            </>
-          )}
-        </View>
-
-        <View style={styles.genresContainer}>
-          {genres?.slice(0, 3).map((genre, index) => (
-            <View key={index} style={styles.genreTag}>
-              <Text style={styles.genreText}>{genre}</Text>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.plot} numberOfLines={2}>
-          {item.plot || "No description available."}
+        <Text style={styles.overview} numberOfLines={3}>
+          {item.overview || "Описание отсутствует."}
         </Text>
       </View>
     </TouchableOpacity>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: "row",
     backgroundColor: "#1E1E1E",
     borderRadius: 12,
     marginBottom: 16,
-    flexDirection: "row",
     overflow: "hidden",
-    height: 180, // Fixed height for consistency
-    borderWidth: 1,
-    borderColor: "#333",
+    height: 150,
+    elevation: 3, // Тень для Android
+    shadowColor: "#000", // Тень для iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   poster: {
-    width: 120,
+    width: 100,
     height: "100%",
+    backgroundColor: "#333",
   },
   info: {
     flex: 1,
     padding: 12,
     justifyContent: "flex-start",
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
   title: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-    flex: 1,
-    marginRight: 8,
-  },
-  ratingBadge: {
-    backgroundColor: "#F5C518", // IMDb Yellow
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  ratingText: {
-    color: "#000",
-    fontWeight: "bold",
-    fontSize: 12,
+    color: "#fff",
+    marginBottom: 4,
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
-  metaText: {
-    color: "#AAAAAA",
-    fontSize: 12,
+  year: {
+    color: "#aaa",
+    fontSize: 14,
+    marginRight: 12,
   },
-  dot: {
-    color: "#AAAAAA",
-    marginHorizontal: 6,
-  },
-  genresContainer: {
+  ratingContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 8,
-  },
-  genreTag: {
+    alignItems: "center",
     backgroundColor: "#333",
-    borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    marginRight: 6,
-    marginBottom: 4,
+    borderRadius: 4,
   },
-  genreText: {
-    color: "#DDD",
-    fontSize: 10,
-  },
-  plot: {
-    color: "#888",
+  rating: {
+    color: "#fff",
     fontSize: 12,
-    lineHeight: 16,
+    fontWeight: "bold",
+    marginLeft: 4,
+  },
+  overview: {
+    color: "#888",
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
-
-export default MovieCard;
