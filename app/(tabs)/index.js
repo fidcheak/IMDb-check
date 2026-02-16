@@ -1,64 +1,77 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import MovieCard from "../../components/MovieCard";
 import { getTitles } from "../../services/api";
 
 export default function HomeScreen() {
-  const [data, setData] = useState([]);
-  const [nextPage, setNextPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [movies, setMovies] = useState([]);
+  const [nextToken, setNextToken] = useState(null);
+  const [loading, setLoading] = useState(false);
   const isFetching = useRef(false);
 
-  const loadMovies = async (page = 1, isRefresh = false) => {
+  const loadData = async (token = null) => {
     if (isFetching.current) return;
     isFetching.current = true;
+    if (!token) setLoading(true);
 
-    if (isRefresh) setIsRefreshing(true);
-    else setIsLoading(true);
+    const res = await getTitles(token);
+    setMovies((prev) => (token ? [...prev, ...res.titles] : res.titles));
+    setNextToken(res.nextPageToken);
 
-    const result = await getTitles(page);
-
-    if (result.titles?.length > 0) {
-      setData((prev) =>
-        isRefresh ? result.titles : [...prev, ...result.titles],
-      );
-      setNextPage(result.nextPageToken);
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setLoading(false);
     isFetching.current = false;
   };
 
   useEffect(() => {
-    loadMovies(1);
+    loadData();
   }, []);
+
+  const handleLoadMore = () => {
+    if (nextToken && !isFetching.current) loadData(nextToken);
+  };
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={data}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={({ item }) => <MovieCard item={item} />}
-        onEndReached={() => nextPage && loadMovies(nextPage)}
-        onEndReachedThreshold={0.3}
-        refreshing={isRefreshing}
-        onRefresh={() => loadMovies(1, true)}
-        ListFooterComponent={
-          isLoading && (
-            <ActivityIndicator
-              size="large"
-              color="#F5C518"
-              style={{ margin: 20 }}
-            />
-          )
-        }
-      />
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color="#F5C518" size="large" />
+        </View>
+      ) : (
+        <FlatList
+          data={movies}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={({ item }) => <MovieCard item={item} />}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.4}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={() => (
+            <View style={styles.header}>
+              <Text style={styles.greeting}>Сегодня в тренде 👋</Text>
+              <Text style={styles.title}>Популярное</Text>
+            </View>
+          )}
+          ListFooterComponent={() =>
+            nextToken && (
+              <ActivityIndicator color="#F5C518" style={{ margin: 20 }} />
+            )
+          }
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
+  center: { flex: 1, justifyContent: "center" },
+  listContent: { paddingBottom: 120, paddingHorizontal: 16 },
+  header: { paddingTop: 60, marginBottom: 20 },
+  greeting: { color: "#888", fontSize: 16 },
+  title: { color: "#fff", fontSize: 32, fontWeight: "bold", marginTop: 4 },
 });

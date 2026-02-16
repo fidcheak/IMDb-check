@@ -1,52 +1,81 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Colors } from "../../constants/theme";
-import LogoHeader from "../../components/LogoHeader";
+import { StyleSheet } from "react-native";
 
-export default function TabLayout() {
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarStyle: {
-          backgroundColor: "#1C1C1C", // A slightly lighter black for contrast
-          borderTopColor: "#333333",
-          height: 60,
-          paddingBottom: 8,
-        },
-        tabBarActiveTintColor: Colors.dark.tint, // Our new gold color
-        tabBarInactiveTintColor: Colors.dark.icon, // Our new icon grey
-        headerShown: true,
-        headerStyle: { backgroundColor: Colors.dark.background },
-        headerTintColor: Colors.dark.text,
+        headerShown: false,
+        tabBarShowLabel: false, // Без подписей
+        tabBarActiveTintColor: "#F5C518",
+        tabBarInactiveTintColor: "#888",
+        tabBarStyle: styles.floatingTabBar,
+        tabBarItemStyle: styles.tabItem, // Прижимаем контент внутри
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          headerTitle: () => <LogoHeader />,
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="home" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: "Search",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="search" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "search" : "search-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="top"
         options={{
-          title: "Top Charts",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="trophy" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "star" : "star-outline"}
+              size={26}
+              color={color}
+            />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  floatingTabBar: {
+    position: "absolute",
+    bottom: 30,
+    marginHorizontal: 30, // Симметричный отступ от краев экрана
+    backgroundColor: "rgba(28, 28, 30, 0.98)",
+    borderRadius: 30,
+    height: 64,
+    borderTopWidth: 0,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    // Убираем системные отступы iOS/Android для точного центрирования
+    paddingBottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabItem: {
+    height: 64,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

@@ -8,94 +8,92 @@ import {
   View,
 } from "react-native";
 import MovieCard from "../../components/MovieCard";
-import ScreenLayout from "../../components/ScreenLayout";
 import { getTopRated } from "../../services/api";
 
 export default function TopChartScreen() {
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("MOVIE");
+  const [loading, setLoading] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+
+  const loadData = async (cursor = null) => {
+    if (!cursor) setLoading(true);
+    const res = await getTopRated(activeTab, cursor);
+    setData((prev) => (cursor ? [...prev, ...res.titles] : res.titles));
+    setNextCursor(res.nextToken);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { titles } = await getTopRated(activeTab);
-      setData(titles);
-      setLoading(false);
-    };
-    load();
+    loadData();
   }, [activeTab]);
 
   return (
-    <ScreenLayout>
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "MOVIE" && styles.activeTab]}
-          onPress={() => setActiveTab("MOVIE")}
-        >
-          <Text
-            style={
-              activeTab === "MOVIE" ? styles.activeTabText : styles.tabText
-            }
-          >
-            Фильмы
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "TV" && styles.activeTab]}
-          onPress={() => setActiveTab("TV")}
-        >
-          <Text
-            style={activeTab === "TV" ? styles.activeTabText : styles.tabText}
-          >
-            Сериалы
-          </Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Рейтинг</Text>
+        <View style={styles.tabBar}>
+          {["MOVIE", "TV"].map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[styles.tab, activeTab === type && styles.activeTab]}
+              onPress={() => {
+                setData([]);
+                setNextCursor(null);
+                setActiveTab(type);
+              }}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === type && styles.activeTabText,
+                ]}
+              >
+                {type === "MOVIE" ? "Фильмы" : "Сериалы"}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#F5C518"
-          style={{ marginTop: 50 }}
-        />
+        <ActivityIndicator color="#F5C518" style={{ marginTop: 50 }} />
       ) : (
         <FlatList
           data={data}
-          keyExtractor={(item, index) => `${activeTab}-${item.id}-${index}`}
-          renderItem={({ item, index }) => (
-            <View style={styles.row}>
-              <Text style={styles.rank}>{index + 1}</Text>
-              <View style={{ flex: 1 }}>
-                <MovieCard item={item} />
-              </View>
-            </View>
-          )}
-          contentContainerStyle={{ padding: 16 }}
+          keyExtractor={(item, index) => `top-${item.id}-${index}`}
+          renderItem={({ item }) => <MovieCard item={item} />}
+          onEndReached={() => nextCursor && loadData(nextCursor)}
+          onEndReachedThreshold={0.4}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+          ListFooterComponent={() =>
+            nextCursor && (
+              <ActivityIndicator color="#F5C518" style={{ margin: 20 }} />
+            )
+          }
         />
       )}
-    </ScreenLayout>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabContainer: {
+  container: { flex: 1, backgroundColor: "#121212" },
+  header: { paddingHorizontal: 20, paddingTop: 60, marginBottom: 15 },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  tabBar: {
     flexDirection: "row",
-    margin: 16,
     backgroundColor: "#1E1E1E",
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 4,
   },
-  tab: { flex: 1, padding: 10, alignItems: "center", borderRadius: 6 },
+  tab: { flex: 1, paddingVertical: 12, alignItems: "center", borderRadius: 12 },
   activeTab: { backgroundColor: "#F5C518" },
-  tabText: { color: "#888" },
-  activeTabText: { color: "#000", fontWeight: "bold" },
-  row: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  rank: {
-    color: "#F5C518",
-    fontSize: 20,
-    fontWeight: "bold",
-    width: 40,
-    textAlign: "center",
-  },
+  tabText: { color: "#888", fontWeight: "700" },
+  activeTabText: { color: "#000" },
 });

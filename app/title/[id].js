@@ -1,84 +1,70 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { getImageUrl, getTitleDetails } from "../../services/api";
 
 export default function TitleDetail() {
-  const { id, type = "movie" } = useLocalSearchParams(); // type передаем из MovieCard
+  const { id, type } = useLocalSearchParams();
+  const router = useRouter();
   const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadDetails = async () => {
-      const data = await getTitleDetails(id, type);
-      setDetails(data);
-      setLoading(false);
-    };
-    loadDetails();
+    // Используем переданный тип (movie или tv)
+    getTitleDetails(id, type || "movie").then(setDetails);
   }, [id]);
 
-  if (loading)
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#F5C518" />
-      </View>
-    );
   if (!details)
     return (
       <View style={styles.center}>
-        <Text style={styles.text}>Ошибка загрузки</Text>
+        <ActivityIndicator color="#F5C518" size="large" />
       </View>
     );
 
   return (
-    <ScrollView style={styles.container}>
-      <Image
-        source={{
-          uri: getImageUrl(
-            details.backdrop_path || details.poster_path,
-            "original",
-          ),
-        }}
-        style={styles.heroImage}
-      />
+    <ScrollView style={styles.container} bounces={false}>
+      <View style={styles.imageHeader}>
+        <Image
+          source={{ uri: getImageUrl(details.poster_path, "original") }}
+          style={styles.heroImage}
+          contentFit="cover"
+        />
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={28} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.content}>
         <Text style={styles.title}>{details.title || details.name}</Text>
 
         <View style={styles.metaRow}>
-          <Text style={styles.meta}>
+          <Text style={styles.metaText}>
             {
               (details.release_date || details.first_air_date || "").split(
                 "-",
               )[0]
             }
           </Text>
-          <Text style={styles.meta}>
-            {" "}
-            • {details.runtime || details.episode_run_time?.[0] || "N/A"} мин
+          <Text style={styles.metaDivider}>•</Text>
+          <Text style={styles.metaText}>
+            {details.genres?.[0]?.name || "Кино"}
           </Text>
-          <Text style={styles.rating}>
-            ★ {details.vote_average?.toFixed(1)}/10
+          <Text style={styles.ratingText}>
+            ★ {details.vote_average?.toFixed(1)}
           </Text>
         </View>
 
-        <View style={styles.genres}>
-          {details.genres?.map((g) => (
-            <View key={g.id} style={styles.pill}>
-              <Text style={styles.pillText}>{g.name}</Text>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Описание</Text>
-        <Text style={styles.body}>
-          {details.overview || "Описание отсутствует."}
+        <Text style={styles.sectionTitle}>Сюжет</Text>
+        <Text style={styles.description}>
+          {details.overview || "Описание на русском языке отсутствует."}
         </Text>
       </View>
     </ScrollView>
@@ -93,34 +79,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#121212",
   },
-  heroImage: { width: "100%", height: 300, backgroundColor: "#222" },
-  content: { padding: 20 },
-  title: { fontSize: 26, fontWeight: "bold", color: "#fff", marginBottom: 10 },
-  metaRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  meta: { color: "#aaa", fontSize: 16, marginRight: 10 },
-  rating: {
-    color: "#F5C518",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: "auto",
+  imageHeader: { width: "100%", height: 450 },
+  heroImage: { width: "100%", height: "100%" },
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 25,
+    padding: 10,
   },
-  genres: { flexDirection: "row", flexWrap: "wrap", marginBottom: 20 },
-  pill: {
-    backgroundColor: "#333",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
+  content: {
+    padding: 20,
+    marginTop: -30,
+    backgroundColor: "#121212",
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
   },
-  pillText: { color: "#ddd", fontSize: 12 },
+  title: { color: "#fff", fontSize: 26, fontWeight: "bold" },
+  metaRow: { flexDirection: "row", alignItems: "center", marginTop: 10 },
+  metaText: { color: "#888", fontSize: 14 },
+  metaDivider: { color: "#444", marginHorizontal: 10 },
+  ratingText: { color: "#F5C518", fontWeight: "bold", marginLeft: "auto" },
   sectionTitle: {
-    color: "#F5C518",
+    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: 15,
-    marginBottom: 8,
+    marginTop: 25,
+    marginBottom: 10,
   },
-  body: { color: "#ddd", fontSize: 16, lineHeight: 24 },
-  text: { color: "#fff" },
+  description: { color: "#ccc", lineHeight: 22, fontSize: 15 },
 });

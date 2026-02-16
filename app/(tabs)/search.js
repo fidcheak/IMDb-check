@@ -1,89 +1,77 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Keyboard,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import MovieCard from "../../components/MovieCard";
-import ScreenLayout from "../../components/ScreenLayout";
 import { searchTitles } from "../../services/api";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    Keyboard.dismiss();
-    setLoading(true);
-    const data = await searchTitles(query);
-    setResults(data);
-    setLoading(false);
+  const handleSearch = async (text) => {
+    setQuery(text);
+    if (text.length > 2) {
+      const res = await searchTitles(text);
+      setResults(res.titles || res || []);
+    }
   };
 
   return (
-    <ScreenLayout>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#888" />
-          <TextInput
-            style={styles.input}
-            placeholder="Поиск..."
-            placeholderTextColor="#888"
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearch}
+        <Text style={styles.headerTitle}>Поиск</Text>
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#F5C518"
+            style={{ marginRight: 12 }}
           />
-          {query.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                setQuery("");
-                setResults([]);
-              }}
-            >
-              <Ionicons name="close-circle" size={20} color="#888" />
-            </TouchableOpacity>
-          )}
+          <TextInput
+            placeholder="Название фильма..."
+            placeholderTextColor="#666"
+            style={styles.input}
+            onChangeText={handleSearch}
+            value={query}
+          />
         </View>
       </View>
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#F5C518" />
-        </View>
-      ) : (
-        <FlatList
-          data={results}
-          keyExtractor={(item, index) => `search-${item.id}-${index}`}
-          renderItem={({ item }) => <MovieCard item={item} />}
-          contentContainerStyle={{ padding: 16 }}
-          ListEmptyComponent={
-            <Text style={styles.empty}>Начните поиск...</Text>
-          }
-        />
-      )}
-    </ScreenLayout>
+      <FlatList
+        data={results}
+        keyExtractor={(item, index) => `search-${item.id}-${index}`}
+        renderItem={({ item }) => <MovieCard item={item} />}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
+        ListEmptyComponent={
+          <Text style={styles.infoText}>Поиск по базе данных...</Text>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { padding: 16, backgroundColor: "#121212" },
-  searchBar: {
+  container: { flex: 1, backgroundColor: "#121212" },
+  header: { paddingHorizontal: 20, paddingTop: 60, marginBottom: 15 },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#1E1E1E",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    height: 56,
   },
-  input: { flex: 1, color: "#fff", marginLeft: 10 },
-  center: { flex: 1, justifyContent: "center", marginTop: 50 },
-  empty: { color: "#555", textAlign: "center", marginTop: 40 },
+  input: { flex: 1, color: "#fff", fontSize: 16, fontWeight: "500" },
+  infoText: {
+    color: "#444",
+    textAlign: "center",
+    marginTop: 100,
+    fontSize: 14,
+  },
 });
