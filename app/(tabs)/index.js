@@ -39,7 +39,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <FlatList
         data={data}
-        keyExtractor={(item) => `${item.id}-${item.media_type}`}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <MovieCard item={item} />}
         onEndReached={() => nextPage && loadMovies(nextPage)}
         onEndReachedThreshold={0.3}

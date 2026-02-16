@@ -62,7 +62,7 @@ export default function TopChartScreen() {
       ) : (
         <FlatList
           data={data}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${activeTab}-${item.id}-${index}`}
           renderItem={({ item, index }) => (
             <View style={styles.row}>
               <Text style={styles.rank}>{index + 1}</Text>
