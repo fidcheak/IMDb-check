@@ -7,7 +7,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true, // Без подписей
+        tabBarShowLabel: true,
         tabBarActiveTintColor: "#F5C518",
         tabBarInactiveTintColor: "#888",
         tabBarStyle: styles.floatingTabBar,
@@ -43,7 +43,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="top"
         options={{
-          title: "Поиск",
+          title: "Лучшие",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "star" : "star-outline"}

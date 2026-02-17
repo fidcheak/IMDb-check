@@ -24,29 +24,36 @@ export const getTitles = async (page = 1) => {
     const response = await apiClient.get("/trending/all/day", {
       params: { page, language: "ru-RU" },
     });
+    const currentPage = response.data.page;
+    const totalPages = response.data.total_pages;
     return {
       titles: response.data.results || [],
-      totalPages: response.data.total_pages,
+      nextPage: currentPage < totalPages ? currentPage + 1 : null,
     };
   } catch (error) {
-    return { titles: [], totalPages: 0 };
+    return { titles: [], nextPage: null };
   }
 };
 
 // 2. Поиск (исправлено!)
 export const searchTitles = async (query, page = 1) => {
-  if (!query) return { titles: [], totalPages: 0 };
+  if (!query) return { titles: [], nextPage: null };
   try {
     const response = await apiClient.get("/search/multi", {
       params: { query, page, language: "ru-RU", include_adult: false },
     });
+    const currentPage = response.data.page;
+    const totalPages = response.data.total_pages;
     // Фильтруем, чтобы оставить только фильмы и сериалы (убираем людей)
     const filtered = (response.data.results || []).filter(
-      (i) => i.media_type !== "person",
+      (i) => i.media_type !== "person"
     );
-    return { titles: filtered, totalPages: response.data.total_pages };
+    return {
+      titles: filtered,
+      nextPage: currentPage < totalPages ? currentPage + 1 : null,
+    };
   } catch (error) {
-    return { titles: [], totalPages: 0 };
+    return { titles: [], nextPage: null };
   }
 };
 
@@ -57,12 +64,14 @@ export const getTopRated = async (activeType = "MOVIE", page = 1) => {
     const response = await apiClient.get(`/${type}/top_rated`, {
       params: { page, language: "ru-RU" },
     });
+    const currentPage = response.data.page;
+    const totalPages = response.data.total_pages;
     return {
       titles: response.data.results || [],
-      totalPages: response.data.total_pages,
+      nextPage: currentPage < totalPages ? currentPage + 1 : null,
     };
   } catch (error) {
-    return { titles: [], totalPages: 0 };
+    return { titles: [], nextPage: null };
   }
 };
 

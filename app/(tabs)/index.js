@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -11,29 +11,35 @@ import { getTitles } from "../../services/api";
 
 export default function HomeScreen() {
   const [movies, setMovies] = useState([]);
-  const [nextToken, setNextToken] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const isFetching = useRef(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadData = async (token = null) => {
-    if (isFetching.current) return;
-    isFetching.current = true;
-    if (!token) setLoading(true);
+  const loadData = async (pageToLoad) => {
+    if (pageToLoad === 1) setLoading(true);
+    else setLoadingMore(true);
 
-    const res = await getTitles(token);
-    setMovies((prev) => (token ? [...prev, ...res.titles] : res.titles));
-    setNextToken(res.nextPageToken);
+    const res = await getTitles(pageToLoad);
+
+    if (res.titles) {
+      setMovies((prev) =>
+        pageToLoad === 1 ? res.titles : [...prev, ...res.titles]
+      );
+      setPage(res.nextPage);
+    }
 
     setLoading(false);
-    isFetching.current = false;
+    setLoadingMore(false);
   };
 
   useEffect(() => {
-    loadData();
+    loadData(1);
   }, []);
 
   const handleLoadMore = () => {
-    if (nextToken && !isFetching.current) loadData(nextToken);
+    if (!loading && !loadingMore && page) {
+      loadData(page);
+    }
   };
 
   return (
@@ -48,7 +54,7 @@ export default function HomeScreen() {
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={({ item }) => <MovieCard item={item} />}
           onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={0.5}
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={() => (
             <View style={styles.header}>
@@ -57,7 +63,7 @@ export default function HomeScreen() {
             </View>
           )}
           ListFooterComponent={() =>
-            nextToken && (
+            loadingMore && (
               <ActivityIndicator color="#F5C518" style={{ margin: 20 }} />
             )
           }
