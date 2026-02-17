@@ -58,16 +58,6 @@ Then run on:
 * Physical device via Expo Go
 * Web browser (API CORS restrictions may apply)
 
-## API Usage
-
-The app uses public IMDb API:
-
-```
-https://api.imdbapi.dev
-```
-
-Only informational endpoints are used. No video or streaming functionality is included.
-
 ## Architecture Notes
 
 * API logic is isolated in the `src/api` layer
