@@ -18,7 +18,6 @@ export default function TitleDetail() {
   const [details, setDetails] = useState(null);
 
   useEffect(() => {
-    // Используем переданный тип (movie или tv)
     getTitleDetails(id, type || "movie").then(setDetails);
   }, [id]);
 

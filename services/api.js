@@ -44,9 +44,9 @@ export const searchTitles = async (query, page = 1) => {
     });
     const currentPage = response.data.page;
     const totalPages = response.data.total_pages;
-    // Фильтруем, чтобы оставить только фильмы и сериалы (убираем людей)
+    // Фильтруем, чтобы оставить только фильмы и сериалы (убираем актеров)
     const filtered = (response.data.results || []).filter(
-      (i) => i.media_type !== "person"
+      (i) => i.media_type !== "person",
     );
     return {
       titles: filtered,
