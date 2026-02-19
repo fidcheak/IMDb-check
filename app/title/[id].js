@@ -14,8 +14,11 @@ import {
 import YoutubeIframe from "react-native-youtube-iframe";
 import { getImageUrl, getTitleDetails } from "../../services/api";
 
-const ActorCard = ({ actor }) => (
-  <View style={styles.actorCard}>
+const ActorCard = ({ actor, router }) => (
+  <TouchableOpacity
+    style={styles.actorCard}
+    onPress={() => router.push(`/person/${actor.id}`)}
+  >
     <Image
       source={{
         uri: getImageUrl(actor.profile_path, "w185"),
@@ -29,7 +32,7 @@ const ActorCard = ({ actor }) => (
     <Text style={styles.actorRole} numberOfLines={2}>
       {actor.character}
     </Text>
-  </View>
+  </TouchableOpacity>
 );
 
 const VideoPlayer = ({ videoId }) => {
@@ -125,7 +128,7 @@ export default function TitleDetail() {
             <FlatList
               horizontal
               data={details.credits.cast}
-              renderItem={({ item }) => <ActorCard actor={item} />}
+              renderItem={({ item }) => <ActorCard actor={item} router={router} />}
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 15 }}

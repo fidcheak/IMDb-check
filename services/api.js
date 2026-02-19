@@ -86,3 +86,19 @@ export const getTitleDetails = async (id, type = "movie") => {
     return null;
   }
 };
+
+// 5. Детали по персоне
+export const getPersonDetails = async (personId) => {
+  try {
+    const response = await apiClient.get(`/person/${personId}`, {
+      params: {
+        append_to_response: "combined_credits,images",
+        language: "ru-RU",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};

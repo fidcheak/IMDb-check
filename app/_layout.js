@@ -20,10 +20,13 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="title/[id]"
-          options={{ title: "Обзор" }}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="person/[id]"
+          options={{ headerShown: false }}
         />
       </Stack>
     </>
   );
 }
-
