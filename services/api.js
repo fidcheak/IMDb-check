@@ -79,7 +79,7 @@ export const getTopRated = async (activeType = "MOVIE", page = 1) => {
 export const getTitleDetails = async (id, type = "movie") => {
   try {
     const response = await apiClient.get(`/${type}/${id}`, {
-      params: { append_to_response: "credits", language: "ru-RU" },
+      params: { append_to_response: "credits,videos", language: "ru-RU" },
     });
     return response.data;
   } catch (error) {
