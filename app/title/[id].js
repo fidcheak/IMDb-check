@@ -65,12 +65,7 @@ export default function TitleDetail() {
   useEffect(() => {
     getTitleDetails(id, type || "movie").then((data) => {
       setDetails(data);
-      addToHistory({
-        id: data.id,
-        poster_path: data.poster_path,
-        title: data.title || data.name,
-        media_type: type || "movie",
-      });
+      addToHistory(data);
     });
   }, [id]);
 
@@ -102,14 +97,7 @@ export default function TitleDetail() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.bookmarkBtn}
-          onPress={() =>
-            toggleFavorite({
-              id: details.id,
-              poster_path: details.poster_path,
-              title: details.title || details.name,
-              media_type: type || "movie",
-            })
-          }
+          onPress={() => toggleFavorite(details)}
         >
           <Ionicons
             name={isInFavorites ? "bookmark" : "bookmark-outline"}
