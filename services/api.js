@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const ACCESS_TOKEN =
-  "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyODZlYTVlMjJkYmMwNzVhM2VjOTRmYmFlZmJmMzE2MSIsIm5iZiI6MTc3MDIxMzE4My4zOTM5OTk4LCJzdWIiOiI2OTgzNGYzZmQzNzgwNDdjM2FlNzRhNTgiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.GVl6p_zSuZbrCedfjQExwVbW513cOhgaUqzcwhUrS_U";
-const BASE_URL = "https://api.themoviedb.org/3";
+// Используем переменные окружения Expo
+const ACCESS_TOKEN = process.env.EXPO_PUBLIC_TMDB_ACCESS_TOKEN;
+const BASE_URL = process.env.EXPO_PUBLIC_TMDB_BASE_URL;
 
 export const getImageUrl = (path, size = "w500") =>
   path
