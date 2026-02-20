@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import YoutubeIframe from "react-native-youtube-iframe";
+import { usePersistence } from "../../hooks/usePersistence";
 import { getImageUrl, getTitleDetails } from "../../services/api";
 
 const ActorCard = ({ actor, router }) => (
@@ -59,14 +60,23 @@ export default function TitleDetail() {
   const { id, type } = useLocalSearchParams();
   const router = useRouter();
   const [details, setDetails] = useState(null);
+  const { addToHistory, toggleFavorite, isFavorite } = usePersistence();
 
   useEffect(() => {
-    getTitleDetails(id, type || "movie").then(setDetails);
+    getTitleDetails(id, type || "movie").then((data) => {
+      setDetails(data);
+      addToHistory({
+        id: data.id,
+        poster_path: data.poster_path,
+        title: data.title || data.name,
+        media_type: type || "movie",
+      });
+    });
   }, [id]);
 
   const trailer = useMemo(() => {
     return details?.videos?.results?.find(
-      (v) => v.site === "YouTube" && v.type === "Trailer",
+      (v) => v.site === "YouTube" && v.type === "Trailer"
     );
   }, [details]);
 
@@ -76,6 +86,8 @@ export default function TitleDetail() {
         <ActivityIndicator color="#F5C518" size="large" />
       </View>
     );
+
+  const isInFavorites = isFavorite(details.id);
 
   return (
     <ScrollView style={styles.container} bounces={false}>
@@ -88,6 +100,23 @@ export default function TitleDetail() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.bookmarkBtn}
+          onPress={() =>
+            toggleFavorite({
+              id: details.id,
+              poster_path: details.poster_path,
+              title: details.title || details.name,
+              media_type: type || "movie",
+            })
+          }
+        >
+          <Ionicons
+            name={isInFavorites ? "bookmark" : "bookmark-outline"}
+            size={28}
+            color="#fff"
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
@@ -95,11 +124,9 @@ export default function TitleDetail() {
 
         <View style={styles.metaRow}>
           <Text style={styles.metaText}>
-            {
-              (details.release_date || details.first_air_date || "").split(
-                "-",
-              )[0]
-            }
+            {(details.release_date || details.first_air_date || "").split(
+              "-"
+            )[0]}
           </Text>
           <Text style={styles.metaDivider}>•</Text>
           <Text style={styles.metaText}>
@@ -128,7 +155,9 @@ export default function TitleDetail() {
             <FlatList
               horizontal
               data={details.credits.cast}
-              renderItem={({ item }) => <ActorCard actor={item} router={router} />}
+              renderItem={({ item }) => (
+                <ActorCard actor={item} router={router} />
+              )}
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 15 }}
@@ -155,6 +184,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 25,
+    padding: 10,
+  },
+  bookmarkBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
     backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 25,
     padding: 10,
