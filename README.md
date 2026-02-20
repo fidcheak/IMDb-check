@@ -1,12 +1,12 @@
 # IMDb Browser (React Native + Expo)
 
-A clean, read-only mobile application for browsing IMDb movie and TV information. The app allows users to search titles, explore popular content, and view detailed metadata. It does **not** support video playback or streaming — it is strictly informational.
+A clean, read-only mobile application for browsing TMDb movie and TV information. The app allows users to search titles, explore popular content, and view detailed metadata. It does **not** support video playback or streaming — it is strictly informational.
 
 ## Features
 
 * Browse popular and trending titles
 * Search movies and TV series by name
-* View IMDb ratings and metadata
+* View TMDb ratings and metadata
 * Open detailed title pages
 * Infinite scroll pagination
 * Dark minimalist UI
@@ -19,7 +19,8 @@ A clean, read-only mobile application for browsing IMDb movie and TV information
 * Expo Router for navigation
 * JavaScript
 * Axios for API requests
-* IMDb API
+* Redux for storage
+* TMDb API
 * Functional components with React hooks
 
 ## Installation
@@ -60,7 +61,7 @@ Then run on:
 
 ## Architecture Notes
 
-* API logic is isolated in the `src/api` layer
+* API logic is isolated in the `services/api` layer
 * Custom hooks manage data fetching and pagination
 * UI components are reusable and modular
 * Screens are separated by responsibility
