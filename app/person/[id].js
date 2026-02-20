@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -65,14 +64,24 @@ export default function PersonDetails() {
   }, [id]);
 
   const filmography = useMemo(() => {
-    if (!details?.combined_credits?.cast) return [];
-    // Сортируем по популярности, затем убираем дубликаты
-    return [...details.combined_credits.cast]
-      .sort((a, b) => b.popularity - a.popularity)
-      .filter(
-        (v, i, a) => a.findIndex((v2) => v2.id === v.id) === i && v.poster_path,
-      )
-      .slice(0, 20); // Оставляем только топ-20
+    if (!details?.combined_credits) return [];
+
+    const credits = [
+      ...(details.combined_credits.cast || []),
+      ...(details.combined_credits.crew || []),
+    ];
+
+    const uniqueCredits = credits.filter(
+      (v, i, a) =>
+        v.credit_id && a.findIndex((t) => t.credit_id === v.credit_id) === i,
+    );
+
+    return uniqueCredits.sort((a, b) => {
+      const dateA = new Date(a.release_date || a.first_air_date);
+      const dateB = new Date(b.release_date || b.first_air_date);
+      // @ts-ignore
+      return dateB - dateA;
+    });
   }, [details]);
 
   if (isLoading) {
@@ -97,48 +106,56 @@ export default function PersonDetails() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Image
-          source={{ uri: getImageUrl(details.profile_path, "h632") }}
-          style={styles.profileImage}
-          contentFit="cover"
-        />
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.name}>{details.name}</Text>
-        <Text style={styles.meta}>
-          {details.birthday || "Дата не указана"} •{" "}
-          {details.place_of_birth || "Место не указано"}
-        </Text>
-
-        {details.biography ? (
-          <>
-            <Text style={styles.sectionTitle}>Биография</Text>
-            <ReadMoreBio text={details.biography} />
-          </>
-        ) : null}
-
-        <Text style={styles.sectionTitle}>Известен(-на) по проектам</Text>
-      </View>
-      <FlatList
-        data={filmography}
-        renderItem={({ item }) => (
-          <View style={{ marginHorizontal: 20 }}>
-            <MovieCard item={item} />
+    <FlatList
+      style={styles.container}
+      data={filmography}
+      keyExtractor={(item, index) => item.credit_id || `${item.id}-${index}`}
+      renderItem={({ item }) => (
+        <View style={{ marginHorizontal: 20 }}>
+          <MovieCard item={item} />
+        </View>
+      )}
+      ListHeaderComponent={
+        <>
+          <View style={styles.header}>
+            <Image
+              source={{ uri: getImageUrl(details.profile_path, "h632") }}
+              style={styles.profileImage}
+              contentFit="cover"
+            />
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="chevron-back" size={28} color="#fff" />
+            </TouchableOpacity>
           </View>
-        )}
-        keyExtractor={(item) => `\${item.id}-\${item.credit_id}`}
-        ListEmptyComponent={() => (
+
+          <View style={styles.content}>
+            <Text style={styles.name}>{details.name}</Text>
+            <Text style={styles.meta}>
+              {details.birthday || "Дата не указана"} •{" "}
+              {details.place_of_birth || "Место не указано"}
+            </Text>
+
+            {details.biography ? (
+              <>
+                <Text style={styles.sectionTitle}>Биография</Text>
+                <ReadMoreBio text={details.biography} />
+              </>
+            ) : null}
+
+            <Text style={styles.sectionTitle}>Известен(-на) по проектам</Text>
+          </View>
+        </>
+      }
+      ListEmptyComponent={() => (
+        <View style={{ paddingHorizontal: 20 }}>
           <Text style={styles.bio}>Фильмография пуста.</Text>
-        )}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      />
-    </ScrollView>
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
   );
 }
 
